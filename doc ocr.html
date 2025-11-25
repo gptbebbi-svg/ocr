@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Extractor Carta d'Identità per Preventiva</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #f5f5f7;
+      color: #222;
+    }
+    h1 {
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      display: block;
+      margin-top: 0.4rem;
+    }
+    input[type="file"] {
+      margin-top: 0.3rem;
+      width: 100%;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 0.35rem 0.5rem;
+      margin-top: 0.2rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+    }
+    .col-6 {
+      flex: 1 1 calc(50% - 0.7rem);
+      min-width: 140px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem 0.9rem;
+      border-radius: 999px;
+      border: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #2563eb;
+      color: #fff;
+      margin-top: 0.5rem;
+    }
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+    .status {
+      font-size: 0.85rem;
+      margin-top: 0.3rem;
+      color: #555;
+      white-space: pre-line;
+    }
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      margin-right: 6px;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.75rem;
+      white-space: pre;
+      background: #111827;
+      color: #e5e7eb;
+      padding: 0.5rem;
+      border-radius: 6px;
+      display: block;
+      overflow-x: auto;
+    }
+    small {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <h1>Estrattore dati da Carta d'Identità (per Preventiva)</h1>
+  <p style="font-size:0.85rem;">
+    Carica le foto <strong>fronte</strong> e <strong>retro</strong> della carta d'identità. Tutto gira nel browser,
+    nessun dato viene inviato a server esterni. Controlla comunque manualmente i campi estratti.
+  </p>
+
+  <div class="card">
+    <h2 style="font-size:1rem;margin-top:0;">1. Carica le immagini</h2>
+    <div class="row">
+      <div class="col-6">
+        <label for="frontImage">Fronte documento</label>
+        <input id="frontImage" type="file" accept="image/*" capture="environment" />
+      </div>
+      <div class="col-6">
+        <label for="backImage">Retro documento</label>
+        <input id="backImage" type="file" accept="image/*" capture="environment" />
+      </div>
+    </div>
+    <button id="processBtn" class="btn">
+      <span id="processSpinner" class="spinner" style="display:none;"></span>
+      <span>Avvia OCR e estrazione dati</span>
+    </button>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:1rem;margin-top:0;">2. Dati estratti (modificabili)</h2>
+    <div class="row">
+      <div class="col-6">
+        <label for="surname">Cognome</label>
+        <input type="text" id="surname" />
+      </div>
+      <div class="col-6">
+        <label for="name">Nome</label>
+        <input type="text" id="name" />
+      </div>
+
+      <div class="col-6">
+        <label for="birthPlace">Luogo di nascita</label>
+        <input type="text" id="birthPlace" />
+      </div>
+      <div class="col-6">
+        <label for="birthDate">Data di nascita</label>
+        <input type="text" id="birthDate" placeholder="es. 30.12.1964" />
+      </div>
+
+      <div class="col-6">
+        <label for="sex">Sesso</label>
+        <input type="text" id="sex" placeholder="M / F" />
+      </div>
+      <div class="col-6">
+        <label for="nationality">Cittadinanza</label>
+        <input type="text" id="nationality" />
+      </div>
+
+      <div class="col-6">
+        <label for="fiscalCode">Codice fiscale</label>
+        <input type="text" id="fiscalCode" />
+      </div>
+      <div class="col-6">
+        <label for="documentNumber">Numero documento</label>
+        <input type="text" id="documentNumber" />
+      </div>
+
+      <div class="col-6">
+        <label for="issueDate">Data emissione</label>
+        <input type="text" id="issueDate" />
+      </div>
+      <div class="col-6">
+        <label for="expiryDate">Data scadenza</label>
+        <input type="text" id="expiryDate" />
+      </div>
+
+      <div class="col-6">
+        <label for="municipality">Comune rilascio</label>
+        <input type="text" id="municipality" />
+      </div>
+      <div class="col-6">
+        <label for="address">Indirizzo di residenza</label>
+        <input type="text" id="address" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:1rem;margin-top:0;">3. Esporta</h2>
+    <button id="copyJsonBtn" class="btn btn-secondary">Copia JSON</button>
+    <button id="copyTextBtn" class="btn btn-secondary">Copia testo</button>
+    <div id="copyStatus" class="status"></div>
+
+    <h3 style="font-size:0.95rem;margin-top:0.8rem;">Anteprima JSON</h3>
+    <code id="jsonPreview">{}</code>
+
+    <h3 style="font-size:0.95rem;margin-top:0.8rem;">Anteprima testo (per email / Unilav)</h3>
+    <textarea id="textPreview" readonly></textarea>
+    <small>
+      Puoi incollare questi dati nel gestionale delle comunicazioni obbligatorie o nella tua bozza di contratto/preventiva.
+    </small>
+  </div>
+
+  <!-- Tesseract.js da CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const processBtn = document.getElementById("processBtn");
+    const spinner = document.getElementById("processSpinner");
+
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+    }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function ocrImage(file, label) {
+      if (!file) return "";
+      setStatus(prev => (typeof prev === "string" ? prev : "") + `\nOCR ${label} in corso...`);
+      const imageData = await readFileAsDataURL(file);
+      const { data } = await Tesseract.recognize(imageData, "ita+eng", {
+        logger: m => {
+          if (m.status === "recognizing text") {
+            setStatus(`OCR ${label}: ${(m.progress * 100).toFixed(0)}%`);
+          }
+        }
+      });
+      return data.text || "";
+    }
+
+    function extractWithRegex(regex, text) {
+      const m = regex.exec(text);
+      return m ? m[1].trim() : "";
+    }
+
+    function normalizeSpaces(str) {
+      return str.replace(/\s+/g, " ").trim();
+    }
+
+    function parseFromTexts(frontText, backText) {
+      const fullText = frontText + "\n" + backText;
+
+      // Alcune versioni della CIE hanno "COGNOME" e "NOME" su righe separate.
+      const surname =
+        extractWithRegex(/COGNOME[^\n]*\n([A-ZÀ-ÖØ-Ý' ]{2,})/i, frontText) ||
+        extractWithRegex(/Cognome\s*[:\-]?\s*([A-ZÀ-ÖØ-Ý' ]{2,})/i, fullText);
+
+      const name =
+        extractWithRegex(/NOME[^\n]*\n([A-ZÀ-ÖØ-Ý' ]{2,})/i, frontText) ||
+        extractWithRegex(/Nome\s*[:\-]?\s*([A-ZÀ-ÖØ-Ý' ]{2,})/i, fullText);
+
+      const birthDate =
+        extractWithRegex(/(\d{2}[./]\d{2}[./]\d{4}).*?(Nascita|NATO|NATA)/i, fullText) ||
+        extractWithRegex(/NATO.*?(\d{2}[./]\d{2}[./]\d{4})/i, fullText) ||
+        extractWithRegex(/NATA.*?(\d{2}[./]\d{2}[./]\d{4})/i, fullText);
+
+      const birthPlace =
+        extractWithRegex(/LUOGO DI NASCITA[^\n]*\n([A-ZÀ-ÖØ-Ý' ]{2,})/i, frontText) ||
+        extractWithRegex(/luogo di nascita\s*[:\-]?\s*([A-ZÀ-ÖØ-Ý' ]{2,})/i, fullText);
+
+      const sex =
+        extractWithRegex(/Sesso\s*[:\-]?\s*([MF])/i, fullText) ||
+        extractWithRegex(/Sesso[^\n]*\n([MF])/i, frontText);
+
+      const nationality =
+        extractWithRegex(/Cittadinanza[^\n]*\n([A-ZÀ-ÖØ-Ý' ]{2,})/i, frontText) ||
+        extractWithRegex(/Cittadinanza\s*[:\-]?\s*([A-ZÀ-ÖØ-Ý' ]{2,})/i, fullText);
+
+      const issueDate =
+        extractWithRegex(/Emissione[^\n]*\n(\d{2}[./]\d{2}[./]\d{4})/i, frontText) ||
+        extractWithRegex(/Data di emissione\s*[:\-]?\s*(\d{2}[./]\d{2}[./]\d{4})/i, fullText);
+
+      const expiryDate =
+        extractWithRegex(/Scadenza[^\n]*\n(\d{2}[./]\d{2}[./]\d{4})/i, frontText) ||
+        extractWithRegex(/Data di scadenza\s*[:\-]?\s*(\d{2}[./]\d{2}[./]\d{4})/i, fullText);
+
+      const municipality =
+        extractWithRegex(/COMUNE DI[^\n]*\n([A-ZÀ-ÖØ-Ý' ]{2,})/i, frontText) ||
+        extractWithRegex(/Comune di\s*[:\-]?\s*([A-ZÀ-ÖØ-Ý' ]{2,})/i, fullText);
+
+      // Codice fiscale: 16 caratteri alfanumerici
+      const fiscalCodeMatch = fullText.match(/[A-Z]{6}[0-9]{2}[A-Z][0-9]{2}[A-Z][0-9]{3}[A-Z]/i);
+      const fiscalCode = fiscalCodeMatch ? fiscalCodeMatch[0].toUpperCase() : "";
+
+      // Numero documento: proviamo prima MRZ sul retro
+      // MRZ linee piene di '<'
+      const lines = backText.split(/\r?\n/).map(l => l.trim());
+      let mrzLines = lines.filter(l => l.replace(/</g, "").length > 10 && (l.match(/</g) || []).length > 5);
+      let documentNumber = "";
+
+      if (mrzLines.length >= 2) {
+        // Per alcune CIE numero documento sta nei primi 9 caratteri della seconda/terza linea
+        const candidate = mrzLines[0].replace(/</g, "");
+        documentNumber = candidate.substring(5, 14) || ""; // heuristic
+      }
+
+      if (!documentNumber) {
+        const mNum =
+          extractWithRegex(/Carta d'identità\s*n\.?\s*([A-Z0-9]{5,})/i, frontText) ||
+          extractWithRegex(/Numero documento\s*[:\-]?\s*([A-Z0-9]{5,})/i, fullText);
+        documentNumber = mNum || "";
+      }
+
+      // Indirizzo: spesso sul retro vicino a "INDIRIZZO DI RESIDENZA" oppure riga con via / viale / piazza
+      let address =
+        extractWithRegex(/Indirizzo di residenza[^\n]*\n(.+)/i, backText) ||
+        extractWithRegex(/Via\s+.+/i, backText) ||
+        extractWithRegex(/Viale\s+.+/i, backText) ||
+        extractWithRegex(/Piazza\s+.+/i, backText);
+
+      address = address ? normalizeSpaces(address) : "";
+
+      return {
+        surname: normalizeSpaces(surname || ""),
+        name: normalizeSpaces(name || ""),
+        birthPlace: normalizeSpaces(birthPlace || ""),
+        birthDate: birthDate || "",
+        sex: sex || "",
+        nationality: normalizeSpaces(nationality || ""),
+        fiscalCode: fiscalCode || "",
+        documentNumber: documentNumber || "",
+        issueDate: issueDate || "",
+        expiryDate: expiryDate || "",
+        municipality: normalizeSpaces(municipality || ""),
+        address: address
+      };
+    }
+
+    function fillForm(data) {
+      document.getElementById("surname").value = data.surname || "";
+      document.getElementById("name").value = data.name || "";
+      document.getElementById("birthPlace").value = data.birthPlace || "";
+      document.getElementById("birthDate").value = data.birthDate || "";
+      document.getElementById("sex").value = data.sex || "";
+      document.getElementById("nationality").value = data.nationality || "";
+      document.getElementById("fiscalCode").value = data.fiscalCode || "";
+      document.getElementById("documentNumber").value = data.documentNumber || "";
+      document.getElementById("issueDate").value = data.issueDate || "";
+      document.getElementById("expiryDate").value = data.expiryDate || "";
+      document.getElementById("municipality").value = data.municipality || "";
+      document.getElementById("address").value = data.address || "";
+      updatePreviews();
+    }
+
+    function collectFormData() {
+      return {
+        surname: document.getElementById("surname").value.trim(),
+        name: document.getElementById("name").value.trim(),
+        birthPlace: document.getElementById("birthPlace").value.trim(),
+        birthDate: document.getElementById("birthDate").value.trim(),
+        sex: document.getElementById("sex").value.trim(),
+        nationality: document.getElementById("nationality").value.trim(),
+        fiscalCode: document.getElementById("fiscalCode").value.trim(),
+        documentNumber: document.getElementById("documentNumber").value.trim(),
+        issueDate: document.getElementById("issueDate").value.trim(),
+        expiryDate: document.getElementById("expiryDate").value.trim(),
+        municipality: document.getElementById("municipality").value.trim(),
+        address: document.getElementById("address").value.trim()
+      };
+    }
+
+    function updatePreviews() {
+      const data = collectFormData();
+      document.getElementById("jsonPreview").textContent = JSON.stringify(data, null, 2);
+
+      const text =
+        `Cognome: ${data.surname}\n` +
+        `Nome: ${data.name}\n` +
+        `Codice fiscale: ${data.fiscalCode}\n` +
+        `Luogo di nascita: ${data.birthPlace}\n` +
+        `Data di nascita: ${data.birthDate}\n` +
+        `Sesso: ${data.sex}\n` +
+        `Cittadinanza: ${data.nationality}\n` +
+        `Indirizzo di residenza: ${data.address}\n` +
+        `Comune rilascio carta: ${data.municipality}\n` +
+        `Numero documento: ${data.documentNumber}\n` +
+        `Data emissione: ${data.issueDate}\n` +
+        `Data scadenza: ${data.expiryDate}\n`;
+      document.getElementById("textPreview").value = text;
+    }
+
+    processBtn.addEventListener("click", async () => {
+      const frontFile = document.getElementById("frontImage").files[0];
+      const backFile = document.getElementById("backImage").files[0];
+      if (!frontFile || !backFile) {
+        alert("Carica sia il fronte che il retro del documento.");
+        return;
+      }
+      processBtn.disabled = true;
+      spinner.style.display = "inline-block";
+      setStatus("Inizio OCR...");
+
+      try {
+        const [frontText, backText] = await Promise.all([
+          ocrImage(frontFile, "fronte"),
+          ocrImage(backFile, "retro")
+        ]);
+        setStatus("OCR completato, estrazione campi in corso...");
+        const parsed = parseFromTexts(frontText, backText);
+        fillForm(parsed);
+        setStatus("Fatto! Controlla i campi qui sotto, correggi se serve e poi copia/esporta.");
+      } catch (err) {
+        console.error(err);
+        setStatus("Errore durante l'OCR: " + err.message);
+      } finally {
+        processBtn.disabled = false;
+        spinner.style.display = "none";
+      }
+    });
+
+    // Aggiorna preview quando l'utente modifica manualmente i campi
+    document.querySelectorAll("input[type='text']").forEach(input => {
+      input.addEventListener("input", updatePreviews);
+    });
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text);
+      }
+      // fallback
+      return new Promise((resolve, reject) => {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand("copy");
+          resolve();
+        } catch (e) {
+          reject(e);
+        } finally {
+          document.body.removeChild(textarea);
+        }
+      });
+    }
+
+    document.getElementById("copyJsonBtn").addEventListener("click", async () => {
+      const json = document.getElementById("jsonPreview").textContent;
+      try {
+        await copyToClipboard(json);
+        document.getElementById("copyStatus").textContent = "JSON copiato negli appunti ✅";
+      } catch {
+        document.getElementById("copyStatus").textContent = "Impossibile copiare il JSON 😕";
+      }
+    });
+
+    document.getElementById("copyTextBtn").addEventListener("click", async () => {
+      const text = document.getElementById("textPreview").value;
+      try {
+        await copyToClipboard(text);
+        document.getElementById("copyStatus").textContent = "Testo copiato negli appunti ✅";
+      } catch {
+        document.getElementById("copyStatus").textContent = "Impossibile copiare il testo 😕";
+      }
+    });
+
+    // Inizializza anteprima vuota
+    updatePreviews();
+  </script>
+</body>
+</html>
